@@ -107,16 +107,20 @@ def get_users():
 
     return jsonify(response_body), 200
 
-""" @app.route('/users/1/favorites', methods=['GET'])
+@app.route('/users/<int:position>/favorites', methods=['GET'])
 def get_users_favorites(position):
-    user_favorites = db.db.session.get(FavoritesCharacters, 1)
+    user_fav_planets = db.session.get(User,position)
+    user_fav_char = db.session.execute(select(FavoritesCharacters).where(FavoritesCharacters.user_id == position)).scalars()
     
-    response_body = ""
-    return jsonify(response_body) """
+    response_body = {
+        "planets": list(map(lambda favPlanet: favPlanet.serialize(), user_fav_planets.favPlanets)),
+        "chars": list(map(lambda favChar: favChar.serialize(), user_fav_char))
+    }
+    return jsonify(response_body)
 
-@app.route('/favorite/planet/<int:planet_id>', methods=['POST'])
-def create_fav_planet(planet_id):
-    user = db.session.get(User, 1)
+@app.route('/favorite/planet/<int:planet_id>', methods=['POST']) # Sé que no es cómo lo quiere Diego pero
+def create_fav_planet(planet_id):                                # en mi modelo lo tenia con tabla auxiliar
+    user = db.session.get(User, 1)                               
     planet = db.session.get(Planet, planet_id)
     user.favPlanets.append(planet)
     db.session.commit()
@@ -158,10 +162,8 @@ def create_fav_char(people_id):
 def delete_fav_char(people_id):
     user = db.session.get(User, 1)
     people = db.session.execute(select(FavoritesCharacters).where(FavoritesCharacters.char_id == people_id)).scalar_one_or_none()
-    print("people ",people)
     db.session.delete(people)
     db.session.commit()
-    print(user)
     response_body = {
         "msg": "The character has been deleted from the favorites list",
         "user": user.serialize()
